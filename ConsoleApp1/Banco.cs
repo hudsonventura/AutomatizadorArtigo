@@ -9,11 +9,9 @@ using System.IO;
 using System.Net;
 using System.Text;
 
-namespace Aumatizador
+namespace Automatizador
 {
-    class Banco
-    {
-        //string dbStringConnection = "Server=3.19.113.193; Port=5432; User Id=postgres; Password=052300; Database=test;";
+    class Banco{
         string bancoImportacao;
         string bancoAlternativo;
         string bancoEstatistica = "Server=hudsonventura.no-ip.org; Port=54320; User Id=postgres; Password=#Timetecnica001; Database=artigo;";
@@ -48,15 +46,14 @@ namespace Aumatizador
             bancoAlternativo = "Server="+ ipAlternativo + "; Port=5432; User Id=postgres; Password=052300; Database=artigo;Pooling=false;Timeout=1024;CommandTimeout=1024;";
 
         }
-        private void registraMomentoEstatistica(int iteracao, string momento, string arquivo, string tipo, string instalacao)
-        {
+        private void registraMomentoEstatistica(int iteracao, string momento, string arquivo, string tipo, string instalacao){
             NpgsqlConnection conexaoEstatistica = new NpgsqlConnection(bancoEstatistica);
             conexaoEstatistica.Open();
 
             string sqlEstatistica;
 
             //caso de fim
-            sqlEstatistica = "UPDATE amostras SET fim = now() WHERE tipo = '" + tipo + "' and arquivo = '" + arquivo + "' AND iteracao = " + iteracao.ToString();
+            sqlEstatistica = "UPDATE amostras SET fim = now() WHERE fim is null and tipo = '" + tipo + "' and arquivo = '" + arquivo + "' AND iteracao = " + iteracao.ToString();
 
             if (momento == "inicio")
             {
@@ -71,8 +68,6 @@ namespace Aumatizador
             }
             conexaoEstatistica.Close();
         }
-
-
         public void importarSQL(string arquivo, string instalacao) {
             string localArquivo = @"C:\log\" + arquivo;
             
@@ -90,88 +85,19 @@ namespace Aumatizador
             {
                 var timeStampInicio = DateTime.Now;
                 registraMomentoEstatistica(i, "inicio", arquivo, "INSERT", instalacao);
-                Console.Write("Iteração " + i);
+                Console.Write(timeStampInicio+" - Iteração " + i);
                 insert(localArquivo, arquivo, i, conexaoBanco, instalacao);
                 registraMomentoEstatistica(i, "fim", arquivo, "INSERT", instalacao);
                 var timeStampFim = DateTime.Now;
 
                 Console.WriteLine(" -> " + timeStampFim.Subtract(timeStampInicio));
-
-                /*
-                using (FileStream stream = File.Open(localArquivo, FileMode.Open))
-                {
-                    byte[] b = new byte[1024];
-                    UTF8Encoding temp = new UTF8Encoding(true);
-                    string linha = "";
-                    string LinhaResto = "";
-
-                    
-                    registraMomentoEstatistica(i, "inicio", arquivo, "INSERT", instalacao);
-                    Console.Write("Iteração " + i);
-
-
-
-                    /*
-                     * contadorLinha = 0;
-                    while (stream.Read(b, 0, b.Length) > 0)
-                    {
-                        string linhaTemp = temp.GetString(b);
-
-                        if (linhaTemp.Contains(linhaDelimitador))
-                        {
-                            linha = LinhaResto + linhaTemp.Substring(0, linhaTemp.IndexOf(linhaDelimitador));
-                            if (linhaTemp.Length - linhaTemp.IndexOf(linhaDelimitador) > 0)
-                                LinhaResto = linhaTemp.Substring(linhaTemp.IndexOf(linhaDelimitador), linhaTemp.Length - linhaTemp.IndexOf(linhaDelimitador));
-                            else
-                                LinhaResto = string.Empty;
-                        }
-                        else
-                            LinhaResto += linhaTemp;
-
-
-                        
-                        if (linha != "")
-                        {
-                            contadorLinha++;
-                            //Console.Write(contadorLinha.ToString());
-
-                            using (NpgsqlCommand pgsqlcommand = new NpgsqlCommand(linha, conexaoBanco))
-                            {
-                                try
-                                {
-                                    pgsqlcommand.ExecuteNonQuery();
-                                }
-                                catch (Exception error) {
-                                    Console.WriteLine(error.Message);
-                                }
-                                
-                            }
-
-
-                        }
-                    }
-                    
-
-                }
-
-                
-                registraMomentoEstatistica(i, "fim", arquivo, "INSERT", instalacao);
-                var timeStampFim = DateTime.Now;
-
-                Console.WriteLine(" -> " + timeStampFim.Subtract(timeStampInicio));
-                */
             }
             
 
             conexaoBanco.Close();
             System.Threading.Thread.Sleep(1000);
         }
-
-
-
-
-        public void select(string arquivo, string instalacao, string query = null)
-        {
+        public void select(string arquivo, string instalacao, string query = null){
 
             NpgsqlConnection conexaoBanco = new NpgsqlConnection(bancoImportacao);
             
@@ -179,10 +105,10 @@ namespace Aumatizador
 
             for (int i = 1; i <= iteracoes; i++)
             {
-                Console.WriteLine("Arquivo " + arquivo + " - Iteração " + i);
+                var timeStampInicio = DateTime.Now;
+                Console.WriteLine(timeStampInicio + " - Iteração " + i);
 
                 conexaoBanco.Open();
-                var timeStampInicio = DateTime.Now;
                 registraMomentoEstatistica(i, "inicio", arquivo, "SELECT", instalacao);
                 selectUnico(bancoImportacao, query);
                 registraMomentoEstatistica(i, "fim", arquivo, "SELECT", instalacao);
@@ -195,12 +121,7 @@ namespace Aumatizador
             
             System.Threading.Thread.Sleep(1000);
         }
-
-
-        
-
-        public int selectUnico(string conexaoBancoString, string query)
-        {
+        public int selectUnico(string conexaoBancoString, string query){
             NpgsqlConnection conexaoBanco = new NpgsqlConnection(conexaoBancoString);
             
             
@@ -240,12 +161,7 @@ namespace Aumatizador
             conexaoBanco.Close();
             return 0;
         }
-
-
-
-
-        public void update(string query, string arquivo, string instalacao)
-        {
+        public void update(string query, string arquivo, string instalacao){
 
             NpgsqlConnection conexaoBanco = new NpgsqlConnection(bancoImportacao);
             conexaoBanco.Open();
@@ -272,9 +188,6 @@ namespace Aumatizador
             conexaoBanco.Close();
             System.Threading.Thread.Sleep(1000);
         }
-
-
-
         private void insert(string localArquivo, string arquivo, int i, NpgsqlConnection conexaoBanco, string instalacao) {
 
             int contadorLinha = 0;
@@ -341,13 +254,7 @@ namespace Aumatizador
             }
 
         }
-
-
-
-
-
-        public void importarSQLComRecuperacao(string arquivo, string instalacao, string vmSecundaria)
-        {
+        public void importarSQLComRecuperacao(string arquivo, string instalacao, string vmSecundaria){
             string localArquivo = @"C:\log\" + arquivo;
 
             string retornoConexao;
@@ -441,13 +348,61 @@ namespace Aumatizador
             conexaoBanco.Close();
             conexaoAlternativa.Close();
         }
+        public void updateAndDelete(string arquivo, string instalacao){
+            string localArquivo = @"C:\log\" + arquivo;
+
+            //string retornoConexao;
+            //string retornoDesconexao;
 
 
+            NpgsqlConnection conexaoBanco = new NpgsqlConnection(bancoImportacao);
+
+            conexaoBanco.Open();
+
+            limparTabela(conexaoBanco, "TRUNCATE TABLE \"filmes\".\"name.basics.tsv\";");
+
+            for (int i = 1; i <= iteracoes; i++)
+            {
+                var timeStampInicio = DateTime.Now;
+
+                Console.WriteLine(timeStampInicio + " - Iniciando o processo. ITERAÇÃO " + i.ToString() + "...");
+                System.Threading.Thread.Sleep(1000);
 
 
+                //começa a inserção de dados
+                Console.Write("Iniciando inserts...");
+                insert(localArquivo, arquivo, i, conexaoBanco, instalacao);
+                Console.WriteLine("OK!");
 
-        private void limparTabela(NpgsqlConnection conexaoBanco, string query)
-        {
+                System.Threading.Thread.Sleep(1000);
+
+                //realiza os update
+                Console.Write("UPDATES nos registros...");
+                registraMomentoEstatistica(i, "inicio", arquivo, "UPDATE", instalacao);
+                executarComando(conexaoBanco, "UPDATE \"filmes\".\"name.basics.tsv\" SET nconst = 'teste';");
+                registraMomentoEstatistica(i, "fim", arquivo, "UPDATE", instalacao);
+                Console.WriteLine("OK!");
+
+                System.Threading.Thread.Sleep(2000);
+
+                //limpa as tabelas
+                Console.Write("Limpando os registros...");
+                registraMomentoEstatistica(i, "inicio", arquivo, "DELETE", instalacao);
+                limparTabela(conexaoBanco, "DELETE FROM \"filmes\".\"name.basics.tsv\" WHERE nconst = 'teste';");
+                registraMomentoEstatistica(i, "fim", arquivo, "DELETE", instalacao);
+                Console.WriteLine("OK!");
+
+                
+
+                Console.WriteLine("--> FIM. ");
+                var timeStampFim = DateTime.Now;
+                Console.Write("Duração: ------------> " + timeStampFim.Subtract(timeStampInicio));
+                Console.WriteLine();
+                System.Threading.Thread.Sleep(2000);
+            }
+            conexaoBanco.Close();
+        }
+        private void limparTabela(NpgsqlConnection conexaoBanco, string query){
             try
             {
                 conexaoBanco.Open();
@@ -464,26 +419,32 @@ namespace Aumatizador
 
             conexaoBanco.Close();
         }
+        private void executarComando(NpgsqlConnection conexaoBanco, string query){
+            try
+            {
+                conexaoBanco.Open();
+            }
+            catch (Exception)
+            {
+            }
+            
 
+            using (NpgsqlCommand pgsqlcommand = new NpgsqlCommand(query, conexaoBanco))
+            {
+                pgsqlcommand.ExecuteNonQuery();
+            }
 
-
-
-
-
-        private string conectarMaquina(string maquina)
-        {
+            conexaoBanco.Close();
+        }
+        private string conectarMaquina(string maquina){
             //enviar comando para conectar a maquina
            return ExecutarCMD("powershell Connect-VMNetworkAdapter -VMName " + maquina + " -SwitchName RedeLocal");
         }
-
-        private string desconectarMaquina(string maquina)
-        {
+        private string desconectarMaquina(string maquina){
             //enviar comando para desconectar a maquina
             return ExecutarCMD("powershell Disconnect-VMNetworkAdapter -VMName " + maquina);
         }
-
-        public static string ExecutarCMD(string comando)
-        {
+        public static string ExecutarCMD(string comando){
             using (Process processo = new Process())
             {
                 processo.StartInfo.FileName = Environment.GetEnvironmentVariable("comspec");
