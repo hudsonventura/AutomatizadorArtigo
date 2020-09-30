@@ -1,0 +1,116 @@
+vm1 -> ssh 192.168.18.235 -l hudsonventura --172.30.126.159
+vm2 -> ssh 192.168.18.236 -l hudsonventura --172.30.115.239
+
+
+wget https://github.com/2ndQuadrant/bdr/archive/bdr-pg/REL9_4_12-1.tar.gz
+tar -xzvf REL9_4_12-1.tar.gz
+
+wget https://github.com/2ndQuadrant/bdr/archive/bdr-plugin/1.0.2.tar.gz
+tar -xzvf 1.0.2.tar.gz
+
+sudo sh -c 'echo "deb-src http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main 9.4" > /etc/apt/sources.list.d/pgdg.list'
+sudo apt-get install wget ca-certificates
+wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get build-dep postgresql-9.4
+
+
+cd ~/bdr-bdr-pg-REL9_4_12-1
+sudo ./configure --prefix=/usr/lib/postgresql/9.4 --enable-debug --with-openssl
+sudo make -j4 -s install-world
+cd ~/bdr-bdr-plugin-1.0.2
+PATH=/usr/lib/postgresql/9.4/bin:"$PATH" ./configure
+make -j4 -s all
+sudo make -s install
+
+sudo apt install postgresql-client-common
+sudo apt install postgresql-client
+
+sudo adduser postgres
+sudo mkdir -p /var/lib/postgresql
+sudo chown postgres:postgres /var/lib/postgresql
+sudo usermod -d /var/lib/postgresql postgres
+su -l postgres
+export PATH=/usr/lib/postgresql/9.4/bin:$PATH
+mkdir ~/9.4-bdr
+initdb -D ~/9.4-bdr -A trust
+
+
+
+
+nano ~/9.4-bdr/postgresql.conf
+
+listen_addresses = '*'
+shared_preload_libraries = 'bdr'
+wal_level = 'logical'
+track_commit_timestamp = on
+max_connections = 100
+max_wal_senders = 10
+max_replication_slots = 10
+max_worker_processes = 10
+
+
+
+
+
+
+nano ~/9.4-bdr/pg_hba.conf
+
+local   replication     postgres                        trust
+host    replication     postgres        127.0.0.1/32    trust
+host    replication     postgres        ::1/128         trust
+
+host all all 0.0.0.0/0  password
+
+host replication postgres 192.168.18.235/32 trust
+host replication postgres 192.168.18.236/32 trust
+
+host replication bdrsync 192.168.18.235/32 password
+host replication bdrsync 192.168.18.236/32 password
+local replication     bdrsync                        trust
+
+
+
+
+export PATH=/usr/lib/postgresql/9.4/bin:$PATH
+pg_ctl -l ~/log -D ~/9.4-bdr start
+psql -c "CREATE USER bdrsync superuser;"
+psql -c "ALTER USER bdrsync WITH PASSWORD '12345#';"
+
+createuser artigo
+createdb -O artigo artigo
+psql artigo -c 'CREATE EXTENSION btree_gist;'
+psql artigo -c 'CREATE EXTENSION bdr;'
+
+
+
+su -l postgres
+export PATH=/usr/lib/postgresql/9.4/bin:$PATH
+pg_ctl -l ~/log -D ~/9.4-bdr start
+pg_ctl -l ~/log -D ~/9.4-bdr stop
+
+
+psql artigo
+
+node 1
+SELECT bdr.bdr_group_create(
+    local_node_name := 'node1',
+    node_external_dsn := 'host=192.168.18.235 user=bdrsync dbname=artigo password=12345#'
+);
+
+
+node 2
+SELECT bdr.bdr_group_join(
+    local_node_name := 'node2',
+    node_external_dsn := 'host=192.168.18.236 user=bdrsync dbname=artigo password=12345#',
+    join_using_dsn := 'host=192.168.18.235 user=bdrsync dbname=artigo password=12345#'
+);
+
+
+teste
+select * from bdr.bdr_nodes;
+select * from bdr.bdr_connections;
+
+remover
+select bdr.remove_bdr_from_local_node(true);

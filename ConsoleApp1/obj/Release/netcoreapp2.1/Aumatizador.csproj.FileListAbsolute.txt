@@ -31,3 +31,15 @@ C:\Users\hudson.ventura\Dropbox\desktop\AutomatizadorArtigo\ConsoleApp1\obj\Rele
 C:\Users\hudson.ventura\Dropbox\desktop\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.AssemblyInfo.cs
 C:\Users\hudson.ventura\Dropbox\desktop\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.dll
 C:\Users\hudson.ventura\Dropbox\desktop\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.pdb
+D:\AutomatizadorArtigo\ConsoleApp1\bin\Release\netcoreapp2.1\Aumatizador.deps.json
+D:\AutomatizadorArtigo\ConsoleApp1\bin\Release\netcoreapp2.1\Aumatizador.runtimeconfig.json
+D:\AutomatizadorArtigo\ConsoleApp1\bin\Release\netcoreapp2.1\Aumatizador.runtimeconfig.dev.json
+D:\AutomatizadorArtigo\ConsoleApp1\bin\Release\netcoreapp2.1\Aumatizador.dll
+D:\AutomatizadorArtigo\ConsoleApp1\bin\Release\netcoreapp2.1\Aumatizador.pdb
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.csprojAssemblyReference.cache
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.AssemblyInfoInputs.cache
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.AssemblyInfo.cs
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.csproj.CoreCompileInputs.cache
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.dll
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.pdb
+D:\AutomatizadorArtigo\ConsoleApp1\obj\Release\netcoreapp2.1\Aumatizador.genruntimeconfig.cache

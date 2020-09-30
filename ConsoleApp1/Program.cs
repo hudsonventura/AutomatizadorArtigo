@@ -1,165 +1,248 @@
 ﻿
 using System;
 using System.IO;
+using Microsoft.EntityFrameworkCore.Design;
+using System.Threading;
+using System.Collections.Generic;
+using System.Linq;
+using System.Diagnostics;
 
 namespace Aumatizador
 {
     class Program
     {
+        private static int iteracoesMaximo = 100;
 
+        static void Main(string[] args) {
+            string diretorio = $@"{Directory.GetCurrentDirectory()}\Importar\";
+            List<IMDB> dados = IMDB.importarArquivo(diretorio, 100000); //99000
 
+            List<string> cenariosPossiveis = new List<string>();
+            string cenarioUnico = "";
 
-        static void Main(string[] args)
-        {
-
-            string importa1Mil =        "insert-1000.sql";
-            string importa10Mil =       "insert-10000.sql";
-            string importa100Mil =      "insert-100000.sql";
-            string importa1Milhao =     "insert-1000000.sql";
-            string importa10Milhao =    "insert-10000000.sql";
-
-            int iteracoes = 100;
-            string vmPrimaria = "Debian1";
-            string vmSecundaria = "Debian2";
-            string instalacao = "";
-            //string instalacao = "1-Solucoes 1-On";
-            //string instalacao = "1-Postgres 1-On";
-
-            
             //seleciona o tipo de instalação
             Console.WriteLine("Informe a instalação a ser operada:");
-            Console.WriteLine("1 -> 2-Solucoes 1-On 2-On");
-            Console.WriteLine("2 -> 2-Solucoes 1-On 2-Off (ainda nao preparado)");
-            Console.WriteLine("3 -> 1-Solucoes 1-On");
-            Console.WriteLine("4 -> 1-Postgres 1-On");
+            Console.WriteLine("1 -> PosgreSQL");
+            Console.WriteLine("2 -> Posgresql-DBR - 1 nó");
+            Console.WriteLine("3 -> Posgresql-DBR - 2 nó");
+            Console.WriteLine("4 -> Posgresql-DBR - 2 nó - sendo 1 com defeito permanente");
+            Console.WriteLine("5 -> Posgresql-DBR - 2 nó - sendo 1 com defeito intermitente");
             string opcao1 = Console.ReadLine();
             switch (opcao1)
             {
-                case "1": instalacao = "2-Solucoes 1-On 2-On"; break;
-                case "2": instalacao = "2-Solucoes 1-On 2-Off"; break;
-                case "3": instalacao = "1-Solucoes 1-On"; break;
-                case "4": instalacao = "1-Postgres 1-On"; vmPrimaria = "Debian3"; break;
+                case "1": cenarioUnico = "PosgreSQL"; break;
+                case "2": cenarioUnico = "Posgresql-DBR - 1 nó"; break;
+                case "3": cenarioUnico = "Posgresql-DBR - 2 nó"; break;
+                case "4": cenarioUnico = "Posgresql-DBR - 2 nó - sendo 1 com defeito permanente"; break;
+                case "5": cenarioUnico = "Posgresql-DBR - 2 nó - sendo 1 com defeito intermitente"; break;
+            }
+            cenariosPossiveis.Add(cenarioUnico);
+
+
+            //cenariosPossiveis.Add("PosgreSQL");
+            //cenariosPossiveis.Add("Posgresql-DBR - 1 nó");
+            //cenariosPossiveis.Add("Posgresql-DBR - 2 nó");
+            //cenariosPossiveis.Add("Posgresql-DBR - 2 nó - sendo 1 com defeito permanente");
+            //cenariosPossiveis.Add("Posgresql-DBR - 2 nó - sendo 1 com defeito intermitente");
+
+
+            foreach (var cenario in cenariosPossiveis)
+            {
+                realizaTestes(dados, cenario);
             }
 
 
-            //informa a quantidade de tuplas
-            Console.WriteLine("Informe a quantida de tuplas dos testes:");
-            Console.WriteLine("1 -> ....1.000");
-            Console.WriteLine("2 -> ...10.000");
-            Console.WriteLine("3 -> ..100.000");
-            Console.WriteLine("4 -> 1.000.000");
-            string opcao2 = Console.ReadLine();
+        }
 
 
-            //seleciona as operações a serem feitas
-            //INSERT
-            Console.WriteLine("Realizar INSERT?");
-            Console.WriteLine("0 -> Nao");
-            Console.WriteLine("1 -> Sim");
-            string insert = Console.ReadLine();
-            
-            //SELECT
-            Console.WriteLine("Realizar SELECT?");
-            Console.WriteLine("0 -> Nao");
-            Console.WriteLine("1 -> Sim");
-            string select = Console.ReadLine();
+        private static void realizaTestes(List<IMDB> dados, string cenario) {
 
-            //UPDATE
-            Console.WriteLine("Realizar UPDATE?");
-            Console.WriteLine("0 -> Nao");
-            Console.WriteLine("1 -> Sim");
-            string update = Console.ReadLine();
             
 
-
-
-            string importar = "";
-            string query = "";
-
-            
-            switch (opcao2)
+            for (int i = 0; i < iteracoesMaximo; i++)
             {
-                case "1":
-                    importar = importa1Mil;
-                    query = "SELECT count(*) FROM filmes.\"name.basics.tsv2\" AS name";
-                    break;
+                //cada entity framework é iniciado uma vez por iteração para evitar o uso de cache
 
-                case "2":
-                    importar = importa10Mil;
-                    query = "SELECT count(*) FROM filmes.\"name.basics.tsv2\" AS pessoa JOIN filmes.\"title.principals.tsv\" AS assoc ON assoc.nconst = pessoa.nconst";
-                    break;
 
-                case "3":
-                    importar = importa100Mil;
-                    query = "SELECT count(*) FROM filmes.\"name.basics.tsv2\" AS pessoa JOIN filmes.\"title.principals.tsv\" AS assoc ON assoc.nconst = pessoa.nconst JOIN filmes.\"title.basics.tsv\" AS titulo ON assoc.tconst = titulo.tconst";
-                    break;
 
-                case "4":
-                    importar = importa1Milhao;
-                    query = "SELECT count(*) FROM filmes.\"name.basics.tsv2\" AS pessoa JOIN filmes.\"title.principals.tsv\" AS assoc ON assoc.nconst = pessoa.nconst JOIN filmes.\"title.basics.tsv\" AS titulo ON assoc.tconst = titulo.tconst JOIN filmes.\"title.episode.tsv\" AS episodios ON episodios.tconst = assoc.tconst JOIN filmes.\"title.ratings.tsv\" AS estrelas ON estrelas.tconst = assoc.tconst";
-                    break;
+                // inicia o contexto do entity framework para salvar as estatisicas em banco
+                BancoEstatistica estatisticas = new BancoEstatistica();
+
+                //inicia o contexto do entity dos nós
+                BancoMaquina1 maquina1 = new BancoMaquina1();
+                BancoMaquina2 maquina2 = new BancoMaquina2();
+
+                Console.Write($"{cenario} -> ");
+                Console.Write($"Iteração {i}: ");
+
+
+                desligaMaquina2(cenario);
+
+
+                //insert
+                Console.Write("Inserindo ...");
+                DateTime tempoINSERTInicial = DateTime.Now;
+                {
+                    maquina1.imdb.AddRange(dados);
+                    maquina1.SaveChanges();
+                }
+                DateTime tempoINSERTFinal = DateTime.Now;
+                Estatisica insert = new Estatisica { horarioInicio = tempoINSERTInicial, horarioFim = tempoINSERTFinal, iteracao = i, setup = cenario, tipo = "INSERT" };
+                estatisticas.Add(insert);
+                estatisticas.SaveChanges();
+                Console.Write("Inseridos! - ");
+
+
+
+
+                //replicação - aguarda até que no nó 2 tenha a mesma quantidade de tuplas inseridas no nó 1
+                if (cenario == "Posgresql-DBR - 2 nó" || cenario == "Posgresql-DBR - 2 nó - sendo 1 com defeito intermitente")
+                {
+                    Console.Write("Replicando ...");
+                    ligaMaquina2(cenario);
+                    DateTime tempoREPLICACAOInicial = DateTime.Now;
+                    int totalTuplasMaquina1 = dados.Count;
+                    int quantTuplasMaquina2 = 0;
+                    while (quantTuplasMaquina2 != totalTuplasMaquina1)
+                    {
+                        quantTuplasMaquina2 = maquina2.imdb.Count();
+                    }
+                    DateTime tempoREPLICACAOFinal = DateTime.Now;
+                    Estatisica replicacao = new Estatisica { horarioInicio = tempoREPLICACAOInicial, horarioFim = tempoREPLICACAOFinal, iteracao = i, setup = cenario, tipo = "REPLICACAO" };
+                    estatisticas.Add(replicacao);
+                    estatisticas.SaveChanges();
+                    Console.Write("Replicado! - ");
+                }
+                
+
+
+
+
+                //realiza o reset dos entities pois acabou de ser feito um insert, então os dados ainda estão em memoria.
+                resetEntity(ref maquina1, ref maquina2);
+
+
+
+
+                //select
+                Console.Write("Select ...");
+                DateTime tempoSELECTInicial = DateTime.Now;
+                
+                    var execucaoSelect = maquina1.imdb.ToList();
+                
+                DateTime tempoSELECTFinal = DateTime.Now;
+                Estatisica select = new Estatisica { horarioInicio = tempoSELECTInicial, horarioFim = tempoSELECTFinal, iteracao = i, setup = cenario, tipo = "SELECT" };
+                estatisticas.Add(select);
+                estatisticas.SaveChanges();
+                Console.Write("Select! - ");
+
+
+
+
+
+                //update
+                Console.Write("Atualizando ...");
+                DateTime tempoUPDATEInicial = DateTime.Now;
+                {
+                    maquina1.imdb.UpdateRange(execucaoSelect);
+                    maquina1.SaveChanges();
+                }
+                DateTime tempoUPDATEFinal = DateTime.Now;
+                Estatisica update = new Estatisica { horarioInicio = tempoUPDATEInicial, horarioFim = tempoUPDATEFinal, iteracao = i, setup = cenario, tipo = "UPDATE" };
+                estatisticas.Add(update);
+                estatisticas.SaveChanges();
+                Console.Write("Atualizado! - ");
+
+
+
+
+
+                //deletes
+                Console.Write("Removendo ...");
+                DateTime tempoDELETEInicial = DateTime.Now;
+                {
+                    maquina1.imdb.RemoveRange(execucaoSelect);
+                    maquina1.SaveChanges();
+                }
+                DateTime tempoDELETEFinal = DateTime.Now;
+                Estatisica delete = new Estatisica { horarioInicio = tempoDELETEInicial, horarioFim = tempoDELETEFinal, iteracao = i, setup = cenario, tipo = "DELETE" };
+                estatisticas.Add(delete);
+                estatisticas.SaveChanges();
+                Console.WriteLine("Removidos! - ");
+
+
+
+
+                //força a limpesa de possiveis caches do entity framework entre as iterações
+                resetEntity(ref maquina1, ref maquina2);
             }
+            GC.Collect();
+        }
 
-            string operacoes = "";
-            if (insert == "1")
+        
+
+
+
+
+
+
+        private static void resetEntity(ref BancoMaquina1 maquina1, ref BancoMaquina2 maquina2) {
+            maquina1.Dispose();
+            maquina2.Dispose();
+
+            maquina1 = null;
+            maquina2 = null;
+
+            GC.Collect();
+
+            maquina1 = new BancoMaquina1();
+            maquina2 = new BancoMaquina2();
+        }
+
+
+
+
+
+
+        private static void ligaMaquina2(string cenario)
+        {
+            if (cenario == "Posgresql-DBR - 2 nó - sendo 1 com defeito intermitente")
             {
-                operacoes += " INSERT ";
+                ExecutarCMD("powershell Connect-VMNetworkAdapter -VMName Maquina2 -SwitchName Internet");
+                Console.Write(" Cabo conectado ");
             }
-            if (select == "1")
+        }
+
+        private static void desligaMaquina2(string cenario)
+        {
+            if (cenario == "Posgresql-DBR - 2 nó - sendo 1 com defeito intermitente")
             {
-                operacoes += " SELECT ";
+                ExecutarCMD("powershell Disconnect-VMNetworkAdapter -VMName Maquina2");
+                Console.Write(" Cabo desconectado ");
             }
-            if (update == "1")
+        }
+
+
+
+        public static string ExecutarCMD(string comando)
+        {
+            using (Process processo = new Process())
             {
-                operacoes += " UPDATE+DELETE ";
+                processo.StartInfo.FileName = Environment.GetEnvironmentVariable("comspec");
+
+                // Formata a string para passar como argumento para o cmd.exe
+                processo.StartInfo.Arguments = string.Format("/c {0}", comando);
+
+                processo.StartInfo.RedirectStandardOutput = true;
+                processo.StartInfo.UseShellExecute = false;
+                processo.StartInfo.CreateNoWindow = true;
+
+                processo.Start();
+                processo.WaitForExit();
+
+                string saida = processo.StandardOutput.ReadToEnd();
+                return saida;
             }
-
-            Console.WriteLine("Opção escolhida: ----> '" + instalacao + "' e o arquivo '" + importar + "' tuplas" + ", nas operações: "+operacoes);
-            Console.WriteLine("Precione qualquer tecla para iniciar o processo ou Ctrl+C para parar agora...");
-            Console.ReadLine();
-
-
-            
-            Banco cotacao = new Banco(vmPrimaria, iteracoes);
-
-            //INSERT
-            if (insert == "1")
-            {
-                Console.WriteLine();
-                Console.WriteLine("Inserts ------------------------");
-                cotacao.importarSQL(importar, instalacao);
-            }
-
-
-
-            //selects
-            if (select == "1")
-            {
-                Console.WriteLine();
-                Console.WriteLine("Selects ------------------------");
-                cotacao.select(importar, instalacao, query);
-            }
-
-
-            //UPDATE + DELETE
-            if (update == "1")
-            {
-                Console.WriteLine();
-                Console.WriteLine("Delete (com inserts)---------------");
-                cotacao.updateAndDelete(importar, instalacao);
-            }
-            
-
-
-            //FUNCIONA APENAS PARA 2 MAQUINAS PERMANENTEMENTE ONLINE, SIMULANDO A RECUPERAÇÃO DE UMA FALHA
-            if (instalacao == "2-Solucoes 1-On 2-On")
-            {
-                //INSERT + recuperação online
-                Console.WriteLine();
-                Console.WriteLine("Defeito ------------------------");
-                cotacao.importarSQLComRecuperacao(importar, instalacao, vmSecundaria);
-            }
-            
         }
     }
 }
